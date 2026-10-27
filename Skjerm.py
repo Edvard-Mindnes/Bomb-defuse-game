@@ -2,6 +2,8 @@ from smbus2 import SMBus
 import RPi.GPIO as GPIO
 from time import sleep #nødvendige bibliotek
 
+from DFRobot_RGBLCD1602 import DFRobot_RGBLCD1602
+
 høyre = 17 #pins for knappene
 venstre = 27
 
@@ -10,35 +12,15 @@ GPIO.setmode(GPIO.BCM) #basically for å gjøre at pinsa vi definerte over passe
 GPIO.setup(høyre, GPIO.IN, pull_up_down=GPIO.PUD_UP) #når knappen er trykket ned er den = 0 ellers er den lik 1 
 GPIO.setup(venstre, GPIO.IN, pull_up_down=GPIO.PUD_UP) #bruker internal pull up til dette
 
-LCD_ADDR = 0x3e #Adressa til lcd skjermen 
-RGB_ADDR = 0x6b
+lcd = DFRobot_RGBLCD1602(0x6B, 16, 2)
 
-bus = SMBus(1) #gjør at pien kan snakke med skjermen 
-
-#rgb setupd
-bus.write_byte_data(RGB_ADDR, 0x00, 0x00)
-bus.write_byte_data(RGB_ADDR, 0x01, 0x00)
-bus.write_byte_data(RGB_ADDR, 0x08, 0xAA)
-
-#farge
-bus.write_byte_data(RGB_ADDR, 0x04, 255)
-bus.write_byte_data(RGB_ADDR, 0x03, 255)
-bus.write_byte_data(RGB_ADDR, 0x02, 255)
-
-#chatgpt dro dette ut av rævva men det har noe med at lcden skal starte opp
-bus.write_byte_data(LCD_ADDR, 0x80, 0x38)
-bus.write_byte_data(LCD_ADDR, 0x80, 0x39)
-bus.write_byte_data(LCD_ADDR, 0x80, 0x14)
-bus.write_byte_data(LCD_ADDR, 0x80, 0x70)
-bus.write_byte_data(LCD_ADDR, 0x80, 0x56)
-bus.write_byte_data(LCD_ADDR, 0x80, 0x6C)
+lcd.set_RGB(255, 255, 255)  # White
 
 sleep(0.2)
 
 #tømmer skjermen 
-bus.write_byte_data(LCD_ADDR, 0x80, 0x38)
-bus.write_byte_data(LCD_ADDR, 0x80, 0x0C)
-bus.write_byte_data(LCD_ADDR, 0x80, 0x01)
+lcd.clear()
+lcd.set_cursor(0, 0) 
 sleep(0.1)
 
 spørsmål = ["Test 1", "Test 2", "Test 3"] #ting som vises på skjermen, obviously
@@ -47,22 +29,22 @@ indeks = 0 #Første element i lista med spørsmål
 
 def clear():
     #først tømmer jeg skjermen, så flytter jeg markøren slikt at den kan skrive fra starten
-    bus.write_byte_data(LCD_ADDR, 0x80, 0x01)
+    lcd.clear()
     sleep(0.05)
-    bus.write_byte_data(LCD_ADDR, 0x80, 0x02)
+    lcd.set_cursor(0, 0) 
     sleep(0.05)
+
+    
 
 def skriv(tekst):
     #For løkka skriver de første 16 tegnene (siden det er så mye plass)
     #før den hopper ned en linje
     #parameteren er en indeks i lista over spørsmål
-    for k in tekst[:16]:
-        bus.write_byte_data(LCD_ADDR, 0x40, ord(k)) #ord() er en innebygd funksjon som gjør om bokstavene til tal
+    lcd.set_cursor(0, 0) 
+    lcd.print_out(tekst[:16])
 
-    bus.write_byte_data(LCD_ADDR, 0x80, 0xC0) #det er her den hopper ned til linje 2
-
-    for k in tekst[16:32]:
-        bus.write_byte_data(LCD_ADDR, 0x40, ord(k))
+    lcd.set_cursor(0, 1) 
+    lcd.print_out(tekst[16:32])
 
 
 def vis_beskjed(spørsmål, indeks):
